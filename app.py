@@ -22,7 +22,7 @@ from filelock import FileLock
 import os
 
 # MongoDB Setup
-client = MongoClient("mongodb://localhost:27017/")
+client = MongoClient("mongodb+srv://jignesh:dUaszhl26B0rpW0f@cluster0.s7hzif4.mongodb.net/")
 db = client['user_db']
 users_collection = db['users']
 
@@ -55,7 +55,7 @@ SECRET_KEY = "APISECRET_77485"
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Replace with your frontend's URL
+    allow_origins=["https://black-rose-frontend.vercel.app/"],  # Replace with your frontend's URL
     allow_credentials=True,
     allow_methods=["*"],  # Allow all HTTP methods
     allow_headers=["*"],  # Allow all headers
