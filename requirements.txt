@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pymongo
+bcrypt
+pyjwt
+python-dotenv
+redis
+pandas
+filelock
