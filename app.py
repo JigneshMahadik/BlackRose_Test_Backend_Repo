@@ -30,14 +30,12 @@ users_collection = db['users']
 # For local setup
 # redis_client = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
 # For production setup
-redis_client = redis.StrictRedis(
-    host=os.getenv("REDIS_HOST", "localhost"),
-    port=int(os.getenv("REDIS_PORT", 6379)),
-    password=os.getenv("REDIS_PASSWORD", None),
-    db=0,
+redis.StrictRedis(
+    host='red-cu2ii22j1k6c73cmcv3g',
+    port=6379,
+    password=None,  # Use the password if specified
     decode_responses=True
 )
-
 
 # FastAPI instance
 app = FastAPI()
