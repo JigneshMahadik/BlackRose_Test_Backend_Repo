@@ -184,3 +184,8 @@ def delete_record(user: str):
         df = df[df["user"] != user]
         df.to_csv(CSV_FILE, index=False)
     return {"message": f"Record for user '{user}' deleted successfully."}
+
+# Default root path
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to my FastAPI application!"}
