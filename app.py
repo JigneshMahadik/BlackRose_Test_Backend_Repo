@@ -55,8 +55,10 @@ SECRET_KEY = "APISECRET_77485"
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://black-rose-frontend.vercel.app/"],  # Replace with your frontend's URL
-    allow_credentials=True
+    allow_origins=["https://black-rose-frontend.vercel.app"],  # Replace with your frontend's URL
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
 )
 
 # Pydantic Models
