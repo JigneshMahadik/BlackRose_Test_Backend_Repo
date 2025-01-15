@@ -30,7 +30,7 @@ users_collection = db['users']
 # For local setup
 # redis_client = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
 # For production setup
-redis.StrictRedis(
+redis_client = redis.StrictRedis(
     host='red-cu2ii22j1k6c73cmcv3g',
     port=6379,
     password=None,  # Use the password if specified
