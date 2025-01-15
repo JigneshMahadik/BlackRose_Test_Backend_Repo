@@ -189,3 +189,7 @@ def delete_record(user: str):
 @app.get("/")
 def read_root():
     return {"message": "Welcome to my FastAPI application!"}
+
+@app.head("/", include_in_schema=False)
+async def read_root_head():
+    return {"message": "OK"}  # Response body won't be included in a HEAD request
