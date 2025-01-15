@@ -58,7 +58,7 @@ app.add_middleware(
     allow_origins=["https://black-rose-frontend.vercel.app"],  # Replace with your frontend's URL
     allow_credentials=True,
     allow_methods=["*"],  # Allow all HTTP methods
-    allow_headers=["*"],  # Allow all headers
+    # allow_headers=["*"],  # Allow all headers
 )
 
 # Pydantic Models
