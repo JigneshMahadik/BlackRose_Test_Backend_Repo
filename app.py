@@ -44,9 +44,9 @@ redis_client = redis.from_url(redis_url, decode_responses=True)
 
 try:
     # Test the Redis connection
-    client.ping()
+    redis_client.ping()
     print("Connected to Redis successfully!")
-except redis.ConnectionError as e:
+except redis_client.ConnectionError as e:
     print(f"Redis connection error: {e}")
 
 # FastAPI instance
