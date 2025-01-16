@@ -119,23 +119,22 @@ async def login(user: LoginModel):
 async def websocket_random_number(websocket: WebSocket):
     await websocket.accept()
     try:
-        token_message = await websocket.receive_text()
-        token = token_message.strip()
-        validate_jwt_token(token)
+        # Expecting token in JSON format
+        message = await websocket.receive_json()
+        token = message.get("token")
+        if not validate_jwt_token(token):
+            await websocket.send_json({"error": "Invalid token"})
+            return
+        
+        # Send random numbers if the token is valid
         while True:
             random_number = random.randint(1, 100)
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            redis_client.lpush("random_numbers", f"{random_number}:{timestamp}")
-            await websocket.send_json({"random_number": random_number, "timestamp": timestamp})
+            await websocket.send_json({"random_number": random_number})
             await asyncio.sleep(1)
-    except jwt.ExpiredSignatureError:
-        await websocket.send_json({"error": "Token has expired"})
+    except Exception as e:
+        print("Error:", e)
         await websocket.close()
-    except jwt.InvalidTokenError:
-        await websocket.send_json({"error": "Invalid token"})
-        await websocket.close()
-    except WebSocketDisconnect:
-        print("Client disconnected")
+
 
 # Fetch Stored Random Numbers
 @app.get("/random-numbers")
