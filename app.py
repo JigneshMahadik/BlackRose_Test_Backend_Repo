@@ -30,12 +30,24 @@ users_collection = db['users']
 # For local setup
 # redis_client = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
 # For production setup
-redis_client = redis.StrictRedis(
-    host='red-cu2ii22j1k6c73cmcv3g',
-    port=6379,
-    password=None,  # Use the password if specified
-    decode_responses=True
-)
+# redis_client = redis.StrictRedis(
+#     host='red-cu4aodlds78s739ql6i0',
+#     port=6379,
+#     password=None,  # Use the password if specified
+#     decode_responses=True
+# )
+# Get Redis URL from environment variables
+redis_url = os.getenv("REDIS_URL")
+
+# Parse the Redis URL and create a Redis client
+redis_client = redis.from_url(redis_url, decode_responses=True)
+
+try:
+    # Test the Redis connection
+    client.ping()
+    print("Connected to Redis successfully!")
+except redis.ConnectionError as e:
+    print(f"Redis connection error: {e}")
 
 # FastAPI instance
 app = FastAPI()
