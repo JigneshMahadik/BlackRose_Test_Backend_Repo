@@ -133,16 +133,37 @@ async def login(user: LoginModel):
 async def websocket_random_number(websocket: WebSocket):
     await websocket.accept()
     try:
+        # Receive the message
         token_message = await websocket.receive_text()
-        token_data = json.loads(token_message)  # Parse the JSON message
-        token = token_data.get("token", "").strip()
+
+        # Check if the message is empty
+        if not token_message.strip():
+            raise ValueError("Received an empty token message.")
+
+        # Parse the JSON message
+        try:
+            token_data = json.loads(token_message)
+        except json.JSONDecodeError:
+            raise ValueError("Invalid JSON format in the token message.")
+
+        # Extract the token
+        token = token_data.get("token")
+        if not token:
+            raise ValueError("Token is missing from the message.")
+
+        # Validate the token
         validate_jwt_token(token)
+
+        # Send random numbers continuously
         while True:
             random_number = random.randint(1, 100)
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             redis_client.lpush("random_numbers", f"{random_number}:{timestamp}")
             await websocket.send_json({"random_number": random_number, "timestamp": timestamp})
             await asyncio.sleep(1)
+    except ValueError as e:
+        await websocket.send_json({"error": str(e)})
+        await websocket.close()
     except jwt.ExpiredSignatureError:
         await websocket.send_json({"error": "Token has expired"})
         await websocket.close()
