@@ -139,6 +139,7 @@ async def websocket_random_number(websocket: WebSocket):
     try:
         # Wait to receive a token message
         token_message = await websocket.receive_text()
+        print("token_message is : ",token_message)
 
         # Handle empty message
         if not token_message.strip():
@@ -149,6 +150,7 @@ async def websocket_random_number(websocket: WebSocket):
         # Handle invalid JSON
         try:
             token_data = json.loads(token_message)
+            print("token_data is : ",token_data)
         except json.JSONDecodeError:
             await websocket.send_json({"error": "Invalid JSON format."})
             await websocket.close()
@@ -156,6 +158,7 @@ async def websocket_random_number(websocket: WebSocket):
 
         # Validate token existence
         token = token_data.get("token")
+        print("token is : ",token)
         if not token:
             await websocket.send_json({"error": "Token is missing in the message."})
             await websocket.close()
@@ -173,6 +176,7 @@ async def websocket_random_number(websocket: WebSocket):
         while True:
             random_number = random.randint(1, 100)
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            print(random_number,timestamp)
             redis_client.lpush("random_numbers", f"{random_number}:{timestamp}")
             await websocket.send_json({"random_number": random_number, "timestamp": timestamp})
             await asyncio.sleep(1)
