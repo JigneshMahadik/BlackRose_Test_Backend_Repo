@@ -132,7 +132,8 @@ async def websocket_random_number(websocket: WebSocket):
     await websocket.accept()
     try:
         token_message = await websocket.receive_text()
-        token = token_message.strip()
+        token_data = json.loads(token_message)  # Parse the JSON message
+        token = token_data.get("token", "").strip()
         validate_jwt_token(token)
         while True:
             random_number = random.randint(1, 100)
@@ -148,6 +149,7 @@ async def websocket_random_number(websocket: WebSocket):
         await websocket.close()
     except WebSocketDisconnect:
         print("Client disconnected")
+
 
 # Fetch Stored Random Numbers
 @app.get("/random-numbers")
