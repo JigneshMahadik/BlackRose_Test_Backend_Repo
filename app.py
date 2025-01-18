@@ -13,7 +13,7 @@ import asyncio
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, timedelta
 import json
-
+import logging
 
 # Redis Integration
 import redis
@@ -22,6 +22,10 @@ import redis
 import pandas as pd
 from filelock import FileLock
 import os
+
+
+logging.basicConfig(level=logging.INFO)
+
 
 # MongoDB Setup
 client = MongoClient("mongodb+srv://jignesh:dUaszhl26B0rpW0f@cluster0.s7hzif4.mongodb.net/")
@@ -99,12 +103,12 @@ def create_jwt_token(username: str):
 # Helper Function to Validate JWT Token
 def validate_jwt_token(token: str):
     try:
-        decoded_token = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        decoded_token = jwt.decode(token, "<your-secret-key>", algorithms=["HS256"])
         return decoded_token
     except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token has expired")
+        raise ValueError("Token has expired.")
     except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise ValueError("Invalid token.")
 
 # Registration API
 @app.post("/register")
@@ -133,45 +137,64 @@ async def login(user: LoginModel):
 async def websocket_random_number(websocket: WebSocket):
     await websocket.accept()
     try:
-        # Receive the message
+        # Wait to receive a token message
         token_message = await websocket.receive_text()
 
-        # Check if the message is empty
+        # Handle empty message
         if not token_message.strip():
-            raise ValueError("Received an empty token message.")
+            await websocket.send_json({"error": "Token message is empty."})
+            await websocket.close()
+            return
 
-        # Parse the JSON message
+        # Handle invalid JSON
         try:
             token_data = json.loads(token_message)
         except json.JSONDecodeError:
-            raise ValueError("Invalid JSON format in the token message.")
+            await websocket.send_json({"error": "Invalid JSON format."})
+            await websocket.close()
+            return
 
-        # Extract the token
+        # Validate token existence
         token = token_data.get("token")
         if not token:
-            raise ValueError("Token is missing from the message.")
+            await websocket.send_json({"error": "Token is missing in the message."})
+            await websocket.close()
+            return
 
         # Validate the token
-        validate_jwt_token(token)
+        try:
+            validate_jwt_token(token)
+        except ValueError as e:
+            await websocket.send_json({"error": str(e)})
+            await websocket.close()
+            return
 
-        # Send random numbers continuously
+        # Send random numbers
         while True:
             random_number = random.randint(1, 100)
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             redis_client.lpush("random_numbers", f"{random_number}:{timestamp}")
             await websocket.send_json({"random_number": random_number, "timestamp": timestamp})
             await asyncio.sleep(1)
-    except ValueError as e:
-        await websocket.send_json({"error": str(e)})
-        await websocket.close()
-    except jwt.ExpiredSignatureError:
-        await websocket.send_json({"error": "Token has expired"})
-        await websocket.close()
-    except jwt.InvalidTokenError:
-        await websocket.send_json({"error": "Invalid token"})
-        await websocket.close()
+
     except WebSocketDisconnect:
         print("Client disconnected")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        await websocket.close()
+
+
+@app.websocket("/ws/random")
+async def websocket_random_number(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        token_message = await websocket.receive_text()
+        logging.info(f"Received WebSocket message: {token_message}")
+        # Handle and validate the message as in Step 1
+    except Exception as e:
+        logging.error(f"Error: {e}")
+        await websocket.close()
+
 
 
 # Fetch Stored Random Numbers
