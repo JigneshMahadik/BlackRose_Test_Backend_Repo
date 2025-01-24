@@ -15,9 +15,6 @@ from datetime import datetime, timedelta
 import json
 import logging
 
-# Redis Integration
-import redis
-
 # File Modification Libraries
 import pandas as pd
 from filelock import FileLock
@@ -31,29 +28,7 @@ logging.basicConfig(level=logging.INFO)
 client = MongoClient("mongodb+srv://jignesh:dUaszhl26B0rpW0f@cluster0.s7hzif4.mongodb.net/")
 db = client['user_db']
 users_collection = db['users']
-
-# Redis Setup
-# For local setup
-# redis_client = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
-# For production setup
-# redis_client = redis.StrictRedis(
-#     host='red-cu4aodlds78s739ql6i0',
-#     port=6379,
-#     password=None,  # Use the password if specified
-#     decode_responses=True
-# )
-# Get Redis URL from environment variables
-redis_url = os.getenv("REDIS_URL")
-
-# Parse the Redis URL and create a Redis client
-redis_client = redis.from_url(redis_url, decode_responses=True)
-
-try:
-    # Test the Redis connection
-    redis_client.ping()
-    print("Connected to Redis successfully!")
-except redis_client.ConnectionError as e:
-    print(f"Redis connection error: {e}")
+random_numbers_collection = db['random_numbers']
 
 # FastAPI instance
 app = FastAPI()
@@ -179,7 +154,7 @@ async def websocket_random_number(websocket: WebSocket):
         while True:
             random_number = random.randint(1, 100)
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            redis_client.lpush("random_numbers", f"{random_number}:{timestamp}")
+            random_numbers_collection.insert_one({"random_number": random_number, "timestamp": timestamp})
             logging.info(f"Sent random number: {random_number}, Timestamp: {timestamp}")
             await websocket.send_json({"random_number": random_number, "timestamp": timestamp})
             await asyncio.sleep(1)
@@ -190,14 +165,11 @@ async def websocket_random_number(websocket: WebSocket):
         logging.error(f"Unexpected error: {e}")
         await websocket.close()
 
-
-
 # Fetch Stored Random Numbers
 @app.get("/random-numbers")
 def get_random_numbers():
-    random_numbers = redis_client.lrange("random_numbers", 0, -1)
-    result = [{"random_number": entry.split(":")[0], "timestamp": entry.split(":")[1]} for entry in random_numbers]
-    return result
+    random_numbers = list(random_numbers_collection.find({}, {"_id": 0}))
+    return random_numbers
 
 # Fetch all records stored in CSV file
 @app.get("/data")
