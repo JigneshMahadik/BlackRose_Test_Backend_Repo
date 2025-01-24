@@ -78,12 +78,13 @@ def create_jwt_token(username: str):
 # Helper Function to Validate JWT Token
 def validate_jwt_token(token: str):
     try:
-        decoded_token = jwt.decode(token, "<your-secret-key>", algorithms=["HS256"])
+        decoded_token = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
         return decoded_token
     except jwt.ExpiredSignatureError:
         raise ValueError("Token has expired.")
     except jwt.InvalidTokenError:
         raise ValueError("Invalid token.")
+        
 
 # Registration API
 @app.post("/register")
@@ -107,39 +108,51 @@ async def login(user: LoginModel):
     token = create_jwt_token(user.username)
     return {"token": token}
 
-# WebSocket for Random Number Generation
-@app.websocket("/ws/random")
-async def websocket_random_number(websocket: WebSocket):
-    await websocket.accept()
-    try:
-        token_message = await websocket.receive_text()
-        token_data = json.loads(token_message)
-        token = token_data.get("token")
 
-        if not token:
-            await websocket.send_json({"error": "Token is missing."})
-            await websocket.close()
-            return
+# WebSocket API for Streaming Random Numbers
+@app.websocket("/ws/random")
+async def stream_random_numbers(websocket: WebSocket):
+    await websocket.accept()
+
+    try:
+        # Receive the token from the frontend
+        token_data = await websocket.receive_text()
 
         try:
-            validate_jwt_token(token)
+            # Validate the token
+            decoded_token = validate_jwt_token(token_data)
+            username = decoded_token.get("username")
+            logging.info(f"Token is valid for user: {username}")
         except ValueError as e:
             await websocket.send_json({"error": str(e)})
             await websocket.close()
             return
 
+        # Start generating random numbers
         while True:
-            random_number = random.randint(1, 100)
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            random_numbers_collection.insert_one({"random_number": random_number, "timestamp": timestamp})
-            await websocket.send_json({"random_number": random_number, "timestamp": timestamp})
-            await asyncio.sleep(1)
+            random_number = random.randint(1, 100)  # Generate a random number
+            timestamp = datetime.utcnow().isoformat()  # Generate current timestamp
+
+            # Insert random number and timestamp into MongoDB
+            random_numbers_collection.insert_one({
+                "username": username,
+                "random_number": random_number,
+                "timestamp": timestamp
+            })
+
+            # Send the random number and timestamp to the frontend
+            await websocket.send_json({
+                "random_number": random_number,
+                "timestamp": timestamp
+            })
+
+            await asyncio.sleep(1)  # Wait for 1 second before sending the next number
 
     except WebSocketDisconnect:
-        print("Client disconnected")
+        logging.info("WebSocket client disconnected")
     except Exception as e:
-        print(f"Unexpected error: {e}")
-        await websocket.close()
+        logging.error(f"Error in WebSocket connection: {e}")
+
 
 
 # Fetch Stored Random Numbers
