@@ -135,14 +135,14 @@ async def login(user: LoginModel):
 # WebSocket API for Random Number Generation
 @app.websocket("/ws/random")
 async def websocket_random_number(websocket: WebSocket):
-    print("check block 1 : ")
+    print("Client attempting to connect.")
     await websocket.accept()
-    print("check block 2 : ")
+    print("Connection accepted.")
+    
     try:
-        print("initiate block : ")
         # Wait to receive a token message
         token_message = await websocket.receive_text()
-        print("token_message is : ",token_message)
+        logging.info(f"Received WebSocket message: {token_message}")
 
         # Handle empty message
         if not token_message.strip():
@@ -153,7 +153,7 @@ async def websocket_random_number(websocket: WebSocket):
         # Handle invalid JSON
         try:
             token_data = json.loads(token_message)
-            print("token_data is : ",token_data)
+            logging.info(f"Parsed token data: {token_data}")
         except json.JSONDecodeError:
             await websocket.send_json({"error": "Invalid JSON format."})
             await websocket.close()
@@ -161,7 +161,7 @@ async def websocket_random_number(websocket: WebSocket):
 
         # Validate token existence
         token = token_data.get("token")
-        print("token is : ",token)
+        logging.info(f"Extracted token: {token}")
         if not token:
             await websocket.send_json({"error": "Token is missing in the message."})
             await websocket.close()
@@ -179,27 +179,15 @@ async def websocket_random_number(websocket: WebSocket):
         while True:
             random_number = random.randint(1, 100)
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            print(random_number,timestamp)
             redis_client.lpush("random_numbers", f"{random_number}:{timestamp}")
+            logging.info(f"Sent random number: {random_number}, Timestamp: {timestamp}")
             await websocket.send_json({"random_number": random_number, "timestamp": timestamp})
             await asyncio.sleep(1)
 
     except WebSocketDisconnect:
-        print("Client disconnected")
+        logging.info("Client disconnected.")
     except Exception as e:
-        print(f"Unexpected error: {e}")
-        await websocket.close()
-
-
-@app.websocket("/ws/random")
-async def websocket_random_number(websocket: WebSocket):
-    await websocket.accept()
-    try:
-        token_message = await websocket.receive_text()
-        logging.info(f"Received WebSocket message: {token_message}")
-        # Handle and validate the message as in Step 1
-    except Exception as e:
-        logging.error(f"Error: {e}")
+        logging.error(f"Unexpected error: {e}")
         await websocket.close()
 
 
