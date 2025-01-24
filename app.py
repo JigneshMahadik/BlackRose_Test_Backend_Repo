@@ -137,6 +137,7 @@ async def login(user: LoginModel):
 async def websocket_random_number(websocket: WebSocket):
     await websocket.accept()
     try:
+        print("initiate block : ")
         # Wait to receive a token message
         token_message = await websocket.receive_text()
         print("token_message is : ",token_message)
