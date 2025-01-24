@@ -135,7 +135,9 @@ async def login(user: LoginModel):
 # WebSocket API for Random Number Generation
 @app.websocket("/ws/random")
 async def websocket_random_number(websocket: WebSocket):
+    print("check block 1 : ")
     await websocket.accept()
+    print("check block 2 : ")
     try:
         print("initiate block : ")
         # Wait to receive a token message
